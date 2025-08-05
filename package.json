@@ -1,0 +1,34 @@
+{
+  "name": "valida_plazo_ripley",
+  "version": "1.0.0",
+  "description": "Aplicación Node.js para automatizar la validación de fechas de compromiso de entrega en ripley.cl usando web scraping con Playwright",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "dev": "node --inspect src/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install-playwright": "npx playwright install chromium",
+    "setup": "npm install && npm run install-playwright"
+  },
+  "keywords": [
+    "nodejs",
+    "playwright",
+    "web-scraping",
+    "ripley",
+    "automation",
+    "delivery-validation"
+  ],
+  "author": "Dev Team",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0"
+  }
+}
