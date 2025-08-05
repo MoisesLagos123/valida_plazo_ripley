@@ -19,12 +19,12 @@ const CREDENCIALES_RIPLEY = {
  * Selectores CSS para el proceso de login
  */
 const SELECTORES = {
-  botonLogin: 'a[href*=\"login\"], button[aria-label*=\"login\"], .login-button, [data-test=\"login-button\"]',
-  campoEmail: 'input[type=\"email\"], input[name*=\"email\"], input[id*=\"email\"], input[placeholder*=\"email\"]',
-  campoPassword: 'input[type=\"password\"], input[name*=\"password\"], input[id*=\"password\"]',
-  botonSubmit: 'button[type=\"submit\"], input[type=\"submit\"], button:has-text(\"Iniciar\"), button:has-text(\"Ingresar\")',
-  indicadorLogueado: '.user-menu, .account-menu, [data-test=\"user-logged\"], .mi-cuenta',
-  mensajeError: '.error-message, .alert-danger, .login-error, [data-test=\"error-message\"]'
+  botonLogin: 'a[href*="login"], button[aria-label*="login"], .login-button, [data-test="login-button"]',
+  campoEmail: 'input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email"]',
+  campoPassword: 'input[type="password"], input[name*="password"], input[id*="password"]',
+  botonSubmit: 'button[type="submit"], input[type="submit"], button:has-text("Iniciar"), button:has-text("Ingresar")',
+  indicadorLogueado: '.user-menu, .account-menu, [data-test="user-logged"], .mi-cuenta',
+  mensajeError: '.error-message, .alert-danger, .login-error, [data-test="error-message"]'
 };
 
 /**
@@ -101,4 +101,264 @@ async function iniciarSesion(page, credenciales = CREDENCIALES_RIPLEY) {
     
     return false;
   }
-}\n\n/**\n * Busca y hace clic en el botón de login\n * @param {Object} page - Página de Playwright\n * @returns {Promise<boolean>} true si encontró y clickeó el botón\n */\nasync function buscarBotonLogin(page) {\n  const selectoresPosibles = [\n    'a[href*=\"login\"]',\n    'button[aria-label*=\"login\"]',\n    '.login-button',\n    '[data-test=\"login-button\"]',\n    'a:has-text(\"Iniciar Sesión\")',\n    'a:has-text(\"Ingresar\")',\n    'button:has-text(\"Login\")',\n    '.user-access',\n    '.account-access'\n  ];\n  \n  for (const selector of selectoresPosibles) {\n    try {\n      logger.debug(`Buscando botón login con selector: ${selector}`);\n      \n      const elemento = await page.locator(selector).first();\n      \n      if (await elemento.isVisible({ timeout: 2000 })) {\n        logger.info(`Botón de login encontrado con selector: ${selector}`);\n        await elemento.click();\n        return true;\n      }\n    } catch (error) {\n      logger.debug(`Selector ${selector} no encontrado, probando siguiente...`);\n      continue;\n    }\n  }\n  \n  return false;\n}\n\n/**\n * Rellena las credenciales en el formulario de login\n * @param {Object} page - Página de Playwright\n * @param {Object} credenciales - Email y password\n */\nasync function rellenarCredenciales(page, credenciales) {\n  logger.progress('Rellenando credenciales...');\n  \n  // Buscar campo de email\n  const campoEmail = await buscarCampoEmail(page);\n  if (!campoEmail) {\n    throw new Error('No se pudo encontrar el campo de email');\n  }\n  \n  // Buscar campo de password\n  const campoPassword = await buscarCampoPassword(page);\n  if (!campoPassword) {\n    throw new Error('No se pudo encontrar el campo de password');\n  }\n  \n  // Rellenar email\n  await campoEmail.clear();\n  await campoEmail.fill(credenciales.email);\n  logger.debug('Email ingresado correctamente');\n  \n  // Rellenar password\n  await campoPassword.clear();\n  await campoPassword.fill(credenciales.password);\n  logger.debug('Password ingresado correctamente');\n  \n  // Pequeña pausa para que los campos se procesen\n  await page.waitForTimeout(1000);\n}\n\n/**\n * Busca el campo de email en el formulario\n * @param {Object} page - Página de Playwright\n * @returns {Promise<Object|null>} Elemento del campo de email o null\n */\nasync function buscarCampoEmail(page) {\n  const selectoresEmail = [\n    'input[type=\"email\"]',\n    'input[name*=\"email\"]',\n    'input[id*=\"email\"]',\n    'input[placeholder*=\"email\"]',\n    'input[placeholder*=\"correo\"]',\n    '.email-input input',\n    '[data-test=\"email-input\"]'\n  ];\n  \n  for (const selector of selectoresEmail) {\n    try {\n      const elemento = await page.locator(selector).first();\n      if (await elemento.isVisible({ timeout: 1000 })) {\n        logger.debug(`Campo email encontrado: ${selector}`);\n        return elemento;\n      }\n    } catch (error) {\n      continue;\n    }\n  }\n  \n  return null;\n}\n\n/**\n * Busca el campo de password en el formulario\n * @param {Object} page - Página de Playwright\n * @returns {Promise<Object|null>} Elemento del campo de password o null\n */\nasync function buscarCampoPassword(page) {\n  const selectoresPassword = [\n    'input[type=\"password\"]',\n    'input[name*=\"password\"]',\n    'input[id*=\"password\"]',\n    'input[placeholder*=\"contraseña\"]',\n    '.password-input input',\n    '[data-test=\"password-input\"]'\n  ];\n  \n  for (const selector of selectoresPassword) {\n    try {\n      const elemento = await page.locator(selector).first();\n      if (await elemento.isVisible({ timeout: 1000 })) {\n        logger.debug(`Campo password encontrado: ${selector}`);\n        return elemento;\n      }\n    } catch (error) {\n      continue;\n    }\n  }\n  \n  return null;\n}\n\n/**\n * Envía el formulario de login\n * @param {Object} page - Página de Playwright\n */\nasync function enviarFormularioLogin(page) {\n  logger.progress('Enviando formulario de login...');\n  \n  const selectoresSubmit = [\n    'button[type=\"submit\"]',\n    'input[type=\"submit\"]',\n    'button:has-text(\"Iniciar\")',\n    'button:has-text(\"Ingresar\")',\n    'button:has-text(\"Login\")',\n    '.login-submit',\n    '[data-test=\"login-submit\"]'\n  ];\n  \n  for (const selector of selectoresSubmit) {\n    try {\n      const elemento = await page.locator(selector).first();\n      if (await elemento.isVisible({ timeout: 2000 })) {\n        logger.debug(`Botón submit encontrado: ${selector}`);\n        await elemento.click();\n        \n        // Esperar a que se procese el login\n        await page.waitForTimeout(3000);\n        return;\n      }\n    } catch (error) {\n      continue;\n    }\n  }\n  \n  // Si no encuentra botón submit, intentar enviar con Enter\n  logger.warn('No se encontró botón submit, intentando con Enter...');\n  await page.keyboard.press('Enter');\n  await page.waitForTimeout(3000);\n}\n\n/**\n * Verifica si el login fue exitoso\n * @param {Object} page - Página de Playwright\n * @returns {Promise<boolean>} true si el login fue exitoso\n */\nasync function verificarLoginExitoso(page) {\n  logger.progress('Verificando estado de login...');\n  \n  // Verificar si hay mensaje de error\n  const hayError = await verificarMensajeError(page);\n  if (hayError) {\n    return false;\n  }\n  \n  // Buscar indicadores de usuario logueado\n  const indicadoresLogin = [\n    '.user-menu',\n    '.account-menu',\n    '[data-test=\"user-logged\"]',\n    '.mi-cuenta',\n    '.user-info',\n    '.logout-button',\n    'a[href*=\"logout\"]',\n    'a:has-text(\"Cerrar Sesión\")'\n  ];\n  \n  for (const selector of indicadoresLogin) {\n    try {\n      const elemento = await page.locator(selector).first();\n      if (await elemento.isVisible({ timeout: 5000 })) {\n        logger.debug(`Indicador de login exitoso encontrado: ${selector}`);\n        return true;\n      }\n    } catch (error) {\n      continue;\n    }\n  }\n  \n  // Verificar cambio en la URL que indique login exitoso\n  const urlActual = page.url();\n  if (urlActual.includes('account') || urlActual.includes('mi-cuenta') || \n      !urlActual.includes('login')) {\n    logger.debug('Login verificado por cambio de URL');\n    return true;\n  }\n  \n  return false;\n}\n\n/**\n * Verifica si hay mensajes de error en el login\n * @param {Object} page - Página de Playwright\n * @returns {Promise<boolean>} true si hay errores\n */\nasync function verificarMensajeError(page) {\n  const selectoresError = [\n    '.error-message',\n    '.alert-danger',\n    '.login-error',\n    '[data-test=\"error-message\"]',\n    '.field-error',\n    '.form-error'\n  ];\n  \n  for (const selector of selectoresError) {\n    try {\n      const elemento = await page.locator(selector).first();\n      if (await elemento.isVisible({ timeout: 2000 })) {\n        const textoError = await elemento.textContent();\n        logger.error('Mensaje de error encontrado en login', { \n          selector, \n          mensaje: textoError \n        });\n        return true;\n      }\n    } catch (error) {\n      continue;\n    }\n  }\n  \n  return false;\n}\n\nmodule.exports = {\n  iniciarSesion,\n  CREDENCIALES_RIPLEY\n};"}
+}
+
+/**
+ * Busca y hace clic en el botón de login
+ * @param {Object} page - Página de Playwright
+ * @returns {Promise<boolean>} true si encontró y clickeó el botón
+ */
+async function buscarBotonLogin(page) {
+  const selectoresPosibles = [
+    'a[href*="login"]',
+    'button[aria-label*="login"]',
+    '.login-button',
+    '[data-test="login-button"]',
+    'a:has-text("Iniciar Sesión")',
+    'a:has-text("Ingresar")',
+    'button:has-text("Login")',
+    '.user-access',
+    '.account-access'
+  ];
+  
+  for (const selector of selectoresPosibles) {
+    try {
+      logger.debug(`Buscando botón login con selector: ${selector}`);
+      
+      const elemento = await page.locator(selector).first();
+      
+      if (await elemento.isVisible({ timeout: 2000 })) {
+        logger.info(`Botón de login encontrado con selector: ${selector}`);
+        await elemento.click();
+        return true;
+      }
+    } catch (error) {
+      logger.debug(`Selector ${selector} no encontrado, probando siguiente...`);
+      continue;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Rellena las credenciales en el formulario de login
+ * @param {Object} page - Página de Playwright
+ * @param {Object} credenciales - Email y password
+ */
+async function rellenarCredenciales(page, credenciales) {
+  logger.progress('Rellenando credenciales...');
+  
+  // Buscar campo de email
+  const campoEmail = await buscarCampoEmail(page);
+  if (!campoEmail) {
+    throw new Error('No se pudo encontrar el campo de email');
+  }
+  
+  // Buscar campo de password
+  const campoPassword = await buscarCampoPassword(page);
+  if (!campoPassword) {
+    throw new Error('No se pudo encontrar el campo de password');
+  }
+  
+  // Rellenar email
+  await campoEmail.clear();
+  await campoEmail.fill(credenciales.email);
+  logger.debug('Email ingresado correctamente');
+  
+  // Rellenar password
+  await campoPassword.clear();
+  await campoPassword.fill(credenciales.password);
+  logger.debug('Password ingresado correctamente');
+  
+  // Pequeña pausa para que los campos se procesen
+  await page.waitForTimeout(1000);
+}
+
+/**
+ * Busca el campo de email en el formulario
+ * @param {Object} page - Página de Playwright
+ * @returns {Promise<Object|null>} Elemento del campo de email o null
+ */
+async function buscarCampoEmail(page) {
+  const selectoresEmail = [
+    'input[type="email"]',
+    'input[name*="email"]',
+    'input[id*="email"]',
+    'input[placeholder*="email"]',
+    'input[placeholder*="correo"]',
+    '.email-input input',
+    '[data-test="email-input"]'
+  ];
+  
+  for (const selector of selectoresEmail) {
+    try {
+      const elemento = await page.locator(selector).first();
+      if (await elemento.isVisible({ timeout: 1000 })) {
+        logger.debug(`Campo email encontrado: ${selector}`);
+        return elemento;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Busca el campo de password en el formulario
+ * @param {Object} page - Página de Playwright
+ * @returns {Promise<Object|null>} Elemento del campo de password o null
+ */
+async function buscarCampoPassword(page) {
+  const selectoresPassword = [
+    'input[type="password"]',
+    'input[name*="password"]',
+    'input[id*="password"]',
+    'input[placeholder*="contraseña"]',
+    '.password-input input',
+    '[data-test="password-input"]'
+  ];
+  
+  for (const selector of selectoresPassword) {
+    try {
+      const elemento = await page.locator(selector).first();
+      if (await elemento.isVisible({ timeout: 1000 })) {
+        logger.debug(`Campo password encontrado: ${selector}`);
+        return elemento;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Envía el formulario de login
+ * @param {Object} page - Página de Playwright
+ */
+async function enviarFormularioLogin(page) {
+  logger.progress('Enviando formulario de login...');
+  
+  const selectoresSubmit = [
+    'button[type="submit"]',
+    'input[type="submit"]',
+    'button:has-text("Iniciar")',
+    'button:has-text("Ingresar")',
+    'button:has-text("Login")',
+    '.login-submit',
+    '[data-test="login-submit"]'
+  ];
+  
+  for (const selector of selectoresSubmit) {
+    try {
+      const elemento = await page.locator(selector).first();
+      if (await elemento.isVisible({ timeout: 2000 })) {
+        logger.debug(`Botón submit encontrado: ${selector}`);
+        await elemento.click();
+        
+        // Esperar a que se procese el login
+        await page.waitForTimeout(3000);
+        return;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  // Si no encuentra botón submit, intentar enviar con Enter
+  logger.warn('No se encontró botón submit, intentando con Enter...');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(3000);
+}
+
+/**
+ * Verifica si el login fue exitoso
+ * @param {Object} page - Página de Playwright
+ * @returns {Promise<boolean>} true si el login fue exitoso
+ */
+async function verificarLoginExitoso(page) {
+  logger.progress('Verificando estado de login...');
+  
+  // Verificar si hay mensaje de error
+  const hayError = await verificarMensajeError(page);
+  if (hayError) {
+    return false;
+  }
+  
+  // Buscar indicadores de usuario logueado
+  const indicadoresLogin = [
+    '.user-menu',
+    '.account-menu',
+    '[data-test="user-logged"]',
+    '.mi-cuenta',
+    '.user-info',
+    '.logout-button',
+    'a[href*="logout"]',
+    'a:has-text("Cerrar Sesión")'
+  ];
+  
+  for (const selector of indicadoresLogin) {
+    try {
+      const elemento = await page.locator(selector).first();
+      if (await elemento.isVisible({ timeout: 5000 })) {
+        logger.debug(`Indicador de login exitoso encontrado: ${selector}`);
+        return true;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  // Verificar cambio en la URL que indique login exitoso
+  const urlActual = page.url();
+  if (urlActual.includes('account') || urlActual.includes('mi-cuenta') || 
+      !urlActual.includes('login')) {
+    logger.debug('Login verificado por cambio de URL');
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Verifica si hay mensajes de error en el login
+ * @param {Object} page - Página de Playwright
+ * @returns {Promise<boolean>} true si hay errores
+ */
+async function verificarMensajeError(page) {
+  const selectoresError = [
+    '.error-message',
+    '.alert-danger',
+    '.login-error',
+    '[data-test="error-message"]',
+    '.field-error',
+    '.form-error'
+  ];
+  
+  for (const selector of selectoresError) {
+    try {
+      const elemento = await page.locator(selector).first();
+      if (await elemento.isVisible({ timeout: 2000 })) {
+        const textoError = await elemento.textContent();
+        logger.error('Mensaje de error encontrado en login', { 
+          selector, 
+          mensaje: textoError 
+        });
+        return true;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  return false;
+}
+
+module.exports = {
+  iniciarSesion,
+  CREDENCIALES_RIPLEY
+};
